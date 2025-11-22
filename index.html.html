@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام بطاقات الطلاب QR احترافي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Cairo Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        /*
+        ** Dark Mode Base **
+        Primary Color: Teal (700) / Green (500)
+        Background: Dark Slate Gray
+        Text: Off-White
+        */
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #0f172a; /* Slate-900 */
+            color: #e2e8f0; /* Slate-200 */
+            min-height: 100vh;
+        }
+        /* Stylish Card Background */
+        .elegant-panel {
+            background: #1e293b; /* Slate-800 */
+            border: 1px solid #334155; /* Slate-700 */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+        }
+        /* Stylish Table Row Hover */
+        .student-row {
+            transition: all 0.3s ease;
+        }
+        .student-row:hover {
+            background-color: #334155; /* Slate-700 */
+            transform: scale(1.005);
+            cursor: pointer;
+        }
+        /* Enhanced Card Design */
+        .id-card-design {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid #0f766e; /* Teal-600 */
+        }
+        /* ID Card Print Styles - Same as before, ensure visibility overrides dark mode */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #idCardModal, #idCardModal * {
+                visibility: visible;
+                color: #000 !important; /* Force black text for printing */
+                background: white !important; /* Force white background for printing */
+            }
+            #idCardModal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-container {
+                box-shadow: none !important;
+                border: 1px solid #ccc !important;
+            }
+        }
+    </style>
+</head>
+<body class="py-0">
+
+    <!-- 1. Navigation Bar (New Feature) -->
+    <nav class="sticky top-0 z-40 elegant-panel shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo/Title -->
+                <div class="flex items-center">
+                    <i class="fas fa-id-badge text-teal-400 text-2xl ml-2"></i>
+                    <span class="text-white text-xl font-extrabold tracking-wider">نظام إدارة الهويات</span>
+                </div>
+                <!-- Menu Items -->
+                <div class="flex">
+                    <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-teal-300 hover:bg-teal-700 hover:text-white transition-colors">الرئيسية</a>
+                    <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:bg-teal-700 hover:text-white transition-colors">تقارير</a>
+                    <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:bg-teal-700 hover:text-white transition-colors">الإعدادات</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-5xl mx-auto px-4 py-12">
+        
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-teal-800 mb-4 shadow-xl border-4 border-teal-600">
+                <i class="fas fa-user-tag text-4xl text-teal-300"></i>
+            </div>
+            <!-- UPDATED TEXT HERE -->
+            <h1 class="text-4xl font-extrabold text-white mb-2 tracking-wide">صنع بواسطة جروب 16</h1>
+            <p class="text-teal-400 text-lg">البحث، العرض، والإصدار الفوري لبطاقات هوية الطلاب.</p>
+        </div>
+
+        <!-- Search -->
+        <div class="mb-8 relative max-w-2xl mx-auto">
+            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                <i class="fas fa-search text-teal-400"></i>
+            </div>
+            <input type="text" id="searchInput" onkeyup="filterTable()" 
+                class="block w-full pr-12 p-4 rounded-xl elegant-panel shadow-lg focus:ring-2 focus:ring-teal-500 outline-none text-white placeholder-slate-400" 
+                placeholder="ابحث بالاسم أو الرقم الجامعي...">
+        </div>
+
+        <!-- List -->
+        <div class="elegant-panel rounded-3xl overflow-hidden">
+            <!-- Table Header -->
+            <div class="grid grid-cols-12 gap-4 bg-teal-700 text-white p-4 font-bold uppercase text-sm shadow-inner">
+                <div class="col-span-3 md:col-span-2 text-center">الرقم الجامعي</div>
+                <div class="col-span-7 md:col-span-8 pr-4">اسم الطالب (الكامل)</div>
+                <div class="col-span-2 text-center">إجراء</div>
+            </div>
+
+            <div id="studentList" class="divide-y divide-slate-700">
+                <!-- Data Generated from your file -->
+                
+                <!-- Row 1 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100796', 'Saleh Aamer')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100796</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">Saleh Aamer</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100798', 'عبدالله عماد جودة السيد بهي حجازي')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100798</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">عبدالله عماد جودة السيد بهي حجازي</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 3 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100799', 'Bavly Fayez Samy Atalah')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100799</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">Bavly Fayez Samy Atalah</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 4 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100801', 'Wafaa Hany')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100801</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">Wafaa Hany</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 5 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100802', 'محمد حسن احمد السيد عامر')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100802</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">محمد حسن احمد السيد عامر</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 6 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100804', 'ايمان عاطف عبدالسلام عبدالصمد')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100804</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">ايمان عاطف عبدالسلام عبدالصمد</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 7 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100805', 'Riham Mostafa Ahmed Abdullah')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100805</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">Riham Mostafa Ahmed Abdullah</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 8 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100806', 'Eman Mohammed Adel Alarwash')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100806</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">Eman Mohammed Adel Alarwash</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 9 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100807', 'هويدا إمام حامد عيسوي النحال')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100807</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">هويدا إمام حامد عيسوي النحال</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 10 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100808', 'محمد إبراهيم مصطفى السيد حسونه')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100808</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">محمد إبراهيم مصطفى السيد حسونه</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 11 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100809', 'Mohamed Borhamy Mohamed Borhamy Halawa')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100809</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">Mohamed Borhamy Mohamed Borhamy Halawa</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 12 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100810', 'حازم موالي اسماعيل مرزوق')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100810</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">حازم موالي اسماعيل مرزوق</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 13 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100811', 'أمجد أحمد كمال علي فرج')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100811</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">أمجد أحمد كمال علي فرج</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 14 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100812', 'Hania Mohamed Ahmed Almaalawy')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100812</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">Hania Mohamed Ahmed Almaalawy</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 15 -->
+                <div class="student-row grid grid-cols-12 gap-4 p-4 items-center" onclick="generateCard('25100813', 'Habiba Atef Ahmed Mohamed')">
+                    <div class="col-span-3 md:col-span-2 text-center font-mono font-extrabold text-teal-400 bg-slate-700 py-1 rounded-lg">25100813</div>
+                    <div class="col-span-7 md:col-span-8 pr-2 font-semibold text-slate-200">Habiba Atef Ahmed Mohamed</div>
+                    <div class="col-span-2 text-center">
+                        <button class="p-2 bg-teal-600 text-white rounded-full hover:bg-teal-500 transition-colors shadow-lg" title="عرض البطاقة">
+                            <i class="fas fa-address-card text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal (ID Card) -->
+    <div id="idCardModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-70 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="id-card-design rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100 print-container relative">
+            <!-- Close Button (Hidden on Print) -->
+            <button onclick="closeModal()" class="absolute top-4 left-4 z-10 text-slate-400 hover:text-red-400 no-print transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+
+            <!-- ID Card Design -->
+            <div class="p-0 text-white">
+                <!-- Card Header -->
+                <div class="bg-teal-700 h-28 relative overflow-hidden flex items-center justify-center">
+                    <!-- Stylish background elements -->
+                    <div class="absolute -bottom-8 -right-8 w-32 h-32 bg-teal-600 rounded-full opacity-30"></div>
+                    <div class="absolute top-0 -left-10 w-24 h-24 bg-teal-500 rounded-full opacity-20"></div>
+                    
+                    <h2 class="text-white text-3xl font-extrabold z-10 tracking-wider pt-4">بطاقة هوية طالب</h2>
+                </div>
+
+                <!-- Card Body -->
+                <div class="px-8 pt-6 pb-6 text-center">
+                    <!-- Photo Placeholder -->
+                    <div class="w-28 h-28 mx-auto bg-teal-800 rounded-full flex items-center justify-center text-teal-300 text-5xl mb-4 border-4 border-teal-600 shadow-xl -mt-16 relative z-10">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+
+                    <p class="text-xs text-slate-400 uppercase font-semibold mb-1">الاسم الكامل</p>
+                    <h3 id="modalName" class="text-2xl font-black text-teal-400 mb-4 px-2 tracking-wide">اسم الطالب</h3>
+                    
+                    <p class="text-xs text-slate-400 uppercase font-semibold mb-1">الرقم الجامعي (ID)</p>
+                    <p id="modalId" class="font-mono text-white text-lg font-bold bg-slate-700 inline-block px-4 py-1 rounded-lg mb-8 shadow-inner">00000000</p>
+
+                    <!-- QR Container -->
+                    <div class="flex justify-center mb-4">
+                        <div class="p-3 bg-white rounded-xl shadow-2xl">
+                            <div id="qrcode"></div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400">امسح الرمز ضوئياً للتحقق من بيانات الطالب</p>
+                </div>
+
+                <!-- Footer -->
+                <div class="bg-slate-800 p-4 border-t border-teal-900 flex justify-between items-center no-print">
+                    <button onclick="window.print()" class="flex-1 bg-teal-600 text-white py-3 rounded-xl hover:bg-teal-500 transition-colors ml-2 shadow-lg font-bold flex items-center justify-center gap-2 transform hover:scale-[1.02]">
+                        <i class="fas fa-print"></i> طباعة البطاقة
+                    </button>
+                    <button onclick="closeModal()" class="flex-1 bg-slate-700 border border-slate-600 text-slate-300 py-3 rounded-xl hover:bg-slate-600 transition-colors mr-2 font-bold">
+                        إغلاق
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set up Tailwind CSS for the dark mode colors
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'teal': {
+                            50: '#f0fdfa', 
+                            100: '#ccfbf1', 
+                            200: '#99f6e4', 
+                            300: '#5eead4', 
+                            400: '#2dd4bf', 
+                            500: '#14b8a6', 
+                            600: '#0d9488', 
+                            700: '#0f766e', 
+                            800: '#115e59', 
+                            900: '#134e4a',
+                        },
+                    },
+                },
+            },
+        }
+
+        function filterTable() {
+            var input, filter, list, rows, nameCol, idCol, i, txtValueName, txtValueId;
+            input = document.getElementById("searchInput");
+            filter = input.value.toUpperCase();
+            list = document.getElementById("studentList");
+            rows = list.getElementsByClassName("student-row");
+
+            for (i = 0; i < rows.length; i++) {
+                idCol = rows[i].getElementsByTagName("div")[0];
+                nameCol = rows[i].getElementsByTagName("div")[1];
+                
+                if (idCol && nameCol) {
+                    txtValueId = idCol.textContent || idCol.innerText;
+                    txtValueName = nameCol.textContent || nameCol.innerText;
+                    
+                    if (txtValueId.toUpperCase().indexOf(filter) > -1 || txtValueName.toUpperCase().indexOf(filter) > -1) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
+                }       
+            }
+        }
+
+        function generateCard(id, name) {
+            // Set Data
+            document.getElementById('modalName').textContent = name;
+            document.getElementById('modalId').textContent = id;
+            
+            // Clear previous QR
+            document.getElementById('qrcode').innerHTML = "";
+            
+            // Generate QR
+            // Content format: "ID: 1234 | Name: Ahmed..."
+            var qrContent = "ID: " + id + "\nName: " + name + "\nURL: " + window.location.href; // Added URL for a real-world use case
+            
+            new QRCode(document.getElementById("qrcode"), {
+                text: qrContent,
+                width: 160, // Increased size for better scanning
+                height: 160,
+                colorDark : "#0f172a", // Slate-900 for high contrast
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            // Show Modal
+            document.getElementById('idCardModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('idCardModal').classList.add('hidden');
+        }
+
+        // Close modal on outside click
+        document.getElementById('idCardModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+        
+        // Make the entire row clickable to trigger card generation
+        // Note: The onclick is now directly on the div in the HTML structure
+    </script>
+</body>
+</html>
